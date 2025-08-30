@@ -25,21 +25,40 @@ class SpotDLGUI(QMainWindow):
 
         self.initUI()
 
+    def get_icon_path(self):
+        # 1. First, check if we're a bundled executable (PyInstaller)
+        if getattr(sys, 'frozen', False):
+            base_path = sys._MEIPASS
+        else:
+            # 2. If not bundled, we're running from source or installed via pip
+            base_path = os.path.dirname(__file__)
+        
+        # Construct the path to the icon
+        icon_path = os.path.join(base_path, 'icon.ico')
+        
+        # 3. Check if the icon exists at the calculated path
+        if os.path.exists(icon_path):
+            return icon_path
+        else:
+            # 4. Final fallback: look in the current working directory
+            cwd_icon_path = os.path.join(os.getcwd(), 'icon.ico')
+            if os.path.exists(cwd_icon_path):
+                return cwd_icon_path
+        
+        # Return None if no icon found anywhere
+        return None
+
     def initUI(self):
         self.setWindowTitle('SpotDL GUI')
         self.setGeometry(100, 100, 800, 700)  # Increased height for counter
 
         # Set application icon if available
         try:
-            if self.is_bundled:
-                # For bundled executable, use relative path
-                icon_path = os.path.join(sys._MEIPASS, 'icon.ico') if hasattr(sys, '_MEIPASS') else 'icon.ico'
-            else:
-                icon_path = 'icon.ico'
-            self.setWindowIcon(QIcon(icon_path))
-        except:
-            pass  # Continue without icon if not available
-
+            icon_path = self.get_icon_path()
+            if icon_path:
+                self.setWindowIcon(QIcon(icon_path))
+        except Exception as e:
+            print(f"Could not load icon: {e}")  # Optional debug output  
         # Create menu bar
         self.create_menu()
 
@@ -787,4 +806,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
