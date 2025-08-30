@@ -766,7 +766,8 @@ class SpotDLGUI(QMainWindow):
         self.cancel_button.setEnabled(not enabled)
         self.reset_counter_btn.setEnabled(enabled)
 
-if __name__ == '__main__':
+def main():
+    """Main function to run the application."""
     app = QApplication(sys.argv)
     
     # Set a global font size for all widgets
@@ -782,6 +783,7 @@ if __name__ == '__main__':
     window.console.setFont(console_font)
     
     window.show()
-
     sys.exit(app.exec_())
 
+if __name__ == '__main__':
+    main() # This calls the function when run directly
