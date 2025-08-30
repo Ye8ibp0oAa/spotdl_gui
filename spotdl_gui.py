@@ -241,6 +241,19 @@ class SpotDLGUI(QMainWindow):
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
+        #GitHub menu
+        github_menu = menubar.addMenu('GitHub')
+      
+        # GitHub action
+        github_action = QAction('SpotDL', self)
+        github_action.triggered.connect(self.open_github_link1)
+        github_menu.addAction(github_action)
+
+        # GitHub action
+        github_action = QAction('SpotDL_GUI', self)
+        github_action.triggered.connect(self.open_github_link2)
+        github_menu.addAction(github_action)
+
     def open_contact_link(self):
         """Open the Linktree contact page in the default browser"""
         try:
@@ -260,7 +273,25 @@ class SpotDLGUI(QMainWindow):
         """
         QMessageBox.about(self, 'About SpotDL GUI', about_text)
         self.append_output("Displayed about information", "info")
+      
+    def open_github_link1(self):
+        """Open the GitHub repository page in the default browser"""
+        try:
+            import webbrowser
+            webbrowser.open('https://github.com/spotDL/spotify-downloader')
+            self.append_output("Opened GitHub repository for SpotDL in browser", "info")
+        except Exception as e:
+            self.append_output(f"Could not open browser: {str(e)}", "error")
 
+    def open_github_link2(self):
+        """Open the GitHub repository page in the default browser"""
+        try:
+            import webbrowser
+            webbrowser.open('https://github.com/Ye8ibp0oAa/spotdl_gui')
+            self.append_output("Opened GitHub repository for SpotDL_GUI in browser", "info")
+        except Exception as e:
+            self.append_output(f"Could not open browser: {str(e)}", "error")
+  
     def toggle_dark_mode(self, checked):
         """Toggle between light and dark mode"""
         self.dark_mode = checked
@@ -753,3 +784,4 @@ if __name__ == '__main__':
     window.show()
 
     sys.exit(app.exec_())
+
