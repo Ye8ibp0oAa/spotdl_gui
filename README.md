@@ -26,3 +26,5 @@ Before using this application, you must install `spotdl` version `4.4.0` :
 ```
 pip install spotdl==4.4.0
 ```
+## EXE Download
+[![Download](https://img.shields.io/badge/Download-Latest_Release-blue?style=for-the-badge&logo=dropbox)](https://www.dropbox.com/scl/fo/7imxeehxzo4qmb0qmvehp/AL1XuF2Dri3vDB50Dp4yBKg?rlkey=lzjalpgpg57m2qapbg93qyj9x&e=1&st=u8gmlm4e&dl=1)
