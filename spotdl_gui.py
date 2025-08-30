@@ -594,7 +594,7 @@ class SpotDLGUI(QMainWindow):
 
         # Build command using the executable name; the batch file sets the PATH
         full_output_path = os.path.join(output_dir, output_template).replace('\\', '/')
-        cmd = ['spotdl.exe', url, '--output', full_output_path, '--lyrics genius musixmatch']
+        cmd = ['spotdl.exe', url, '--output', full_output_path]
         
         # Add audio format and bitrate flags
         cmd.extend(audio_flags)
@@ -751,4 +751,5 @@ if __name__ == '__main__':
     window.console.setFont(console_font)
     
     window.show()
+
     sys.exit(app.exec_())
