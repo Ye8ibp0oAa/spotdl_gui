@@ -8,6 +8,10 @@ A user-friendly graphical interface for downloading Spotify songs, albums, and p
 ![License](https://img.shields.io/badge/License-GPLv3-green)
 ![Version](https://img.shields.io/badge/Version-0.1.0-orange)
 
+## Screenshots
+<img width="1366" height="720" alt="Image" src="https://github.com/user-attachments/assets/3e7e013b-533e-47db-94b1-2f820525a42e" />
+<img width="1366" height="720" alt="Image" src="https://github.com/user-attachments/assets/cb34bbbd-9936-4834-953f-b3cb87802c93" />
+
 ## Features
 - 🎵 Download Spotify songs, albums, and playlists
 - 🎨 Clean, modern GUI built with PyQt5
@@ -40,4 +44,5 @@ pip install spotdl_gui
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.
 
 # EXE Download for GUI
+
 [![Download](https://img.shields.io/badge/Download-Latest_Release-blue?style=for-the-badge&logo=dropbox)](https://www.dropbox.com/scl/fo/7imxeehxzo4qmb0qmvehp/AL1XuF2Dri3vDB50Dp4yBKg?rlkey=lzjalpgpg57m2qapbg93qyj9x&e=1&st=u8gmlm4e&dl=1)
