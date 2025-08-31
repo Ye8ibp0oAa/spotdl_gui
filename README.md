@@ -48,12 +48,6 @@ pip install spotdl_gui
 spotdl_gui
 ```
 
-## To-Do List
-
-- [X] Get GUI working 
-- [X] Custom download structure
-- [ ] Custom console command line
-- [ ] 
-
 # License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.
+
