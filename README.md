@@ -41,7 +41,7 @@ pip install spotdl==4.4.2
 ```
 pip install spotdl_gui
 ```
-# Usage
+# Opening the GUI
 <sub>Type the following into your terminal<sub>
 ```
 spotdl_gui
@@ -49,7 +49,3 @@ spotdl_gui
 
 # License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.
-
-
-
-
