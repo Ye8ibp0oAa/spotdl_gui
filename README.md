@@ -9,7 +9,7 @@ A user-friendly graphical interface for downloading Spotify songs, albums, and p
 
 ![License](https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge&labelColor=black&color=blue)
 ![SpotDL GUI](https://img.shields.io/badge/Python-3.10_|_3.11_|_3.12_|_3.13-blue?style=for-the-badge&labelColor=black&color=blue)
-![Version](https://img.shields.io/badge/Version-0.1.0-orange?style=for-the-badge&labelColor=black)
+![Version](https://img.shields.io/badge/Version-0.1.3-orange?style=for-the-badge&labelColor=black)
 
 ## Features
 - 🎵 Download Spotify songs, albums, and playlists
@@ -28,14 +28,14 @@ A user-friendly graphical interface for downloading Spotify songs, albums, and p
 <img width="1366" height="720" alt="Image" src="https://github.com/user-attachments/assets/cb34bbbd-9936-4834-953f-b3cb87802c93" />
 
 ## Prerequisites
-Before using this application, you must install `spotdl` version `4.4.0` :
+Before using this application, you must install `spotdl` version `4.4.2` :
 
 ```
-pip install spotdl==4.4.0
+pip install spotdl==4.4.2
 ```
 
 ### System Requirements
-- **Python**: 3.8 or higher
+- **Python**: 3.10 or higher
 - **FFmpeg**: Required for audio conversion
 
 # Installation
@@ -50,4 +50,5 @@ spotdl_gui
 
 # License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.
+
 
