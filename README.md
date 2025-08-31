@@ -20,12 +20,11 @@ A user-friendly graphical interface for downloading Spotify songs, albums, and p
 - 📁 Custom folder structure options
 - 📊 Download counter with reset functionality
 - 📝 Real-time output log with color-coded messages
-- 🖼️ System tray integration
 - 🎯 One-click folder opening
 
 ## Screenshots
-<img width="1366" height="720" alt="Image" src="https://github.com/user-attachments/assets/3e7e013b-533e-47db-94b1-2f820525a42e" />
-<img width="1366" height="720" alt="Image" src="https://github.com/user-attachments/assets/cb34bbbd-9936-4834-953f-b3cb87802c93" />
+<img width="1280" height="720" alt="Image" src="https://github.com/user-attachments/assets/3e7e013b-533e-47db-94b1-2f820525a42e" />
+<img width="1280" height="720" alt="Image" src="https://github.com/user-attachments/assets/cb34bbbd-9936-4834-953f-b3cb87802c93" />
 
 ## Prerequisites
 Before using this application, you must install `spotdl` version `4.4.2` :
@@ -50,6 +49,7 @@ spotdl_gui
 
 # License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.
+
 
 
 
