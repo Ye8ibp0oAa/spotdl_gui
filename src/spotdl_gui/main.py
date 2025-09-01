@@ -511,33 +511,33 @@ class SpotDLGUI(QMainWindow):
             self.append_output("Running in portable mode...", "info")
 
     def create_menu(self):
-        """Create the menu bar with dark mode and contact options"""
+        """Create the menu bar with settings and help options"""
         menubar = self.menuBar()
 
-        # View menu
-        view_menu = menubar.addMenu('View')
+        # Settings menu (renamed from 'View' for clarity)
+        settings_menu = menubar.addMenu('Settings')
         
         # Dark mode toggle action
         self.dark_mode_action = QAction('Dark Mode', self, checkable=True)
         self.dark_mode_action.setChecked(self.dark_mode)
         self.dark_mode_action.triggered.connect(self.toggle_dark_mode)
-        view_menu.addAction(self.dark_mode_action)
+        settings_menu.addAction(self.dark_mode_action)
 
         # Logging toggle action
         self.logging_action = QAction('Enable Logging', self, checkable=True)
         self.logging_action.setChecked(self.log_enabled)
         self.logging_action.triggered.connect(self.toggle_logging)
-        view_menu.addAction(self.logging_action)
+        settings_menu.addAction(self.logging_action)
 
         # Log directory selection action
         self.log_dir_action = QAction('Select Log Directory', self)
         self.log_dir_action.triggered.connect(self.select_log_directory)
-        view_menu.addAction(self.log_dir_action)
+        settings_menu.addAction(self.log_dir_action)
 
         # Open log directory action
         self.open_log_dir_action = QAction('Open Log Directory', self)
         self.open_log_dir_action.triggered.connect(self.open_log_directory)
-        view_menu.addAction(self.open_log_dir_action)
+        settings_menu.addAction(self.open_log_dir_action)
 
         # Help menu
         help_menu = menubar.addMenu('Help')
@@ -570,7 +570,6 @@ class SpotDLGUI(QMainWindow):
         contact_link_action = QAction('Linktree', self)
         contact_link_action.triggered.connect(self.open_contact_link)
         contact_menu.addAction(contact_link_action)
-
 
     def toggle_logging(self, checked):
         """Toggle logging on/off"""
