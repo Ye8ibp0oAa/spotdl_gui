@@ -1,11 +1,14 @@
-﻿import sys
+import sys
 import subprocess
 import threading
 import os
+import datetime
+import configparser
+import json
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QLineEdit, QPushButton,
                              QTextEdit, QProgressBar, QMessageBox, QFileDialog,
-                             QGroupBox, QRadioButton, QButtonGroup, QCheckBox, QAction, QComboBox)
+                             QGroupBox, QRadioButton, QButtonGroup, QCheckBox, QAction, QComboBox, QMenu)
 from PyQt5.QtCore import Qt, pyqtSignal, QObject
 from PyQt5.QtGui import QFont, QIcon, QPalette, QColor, QTextCharFormat, QTextCursor
 
@@ -22,8 +25,270 @@ class SpotDLGUI(QMainWindow):
         self.emitter.new_output.connect(self.append_output)
         self.download_count = 0  # Initialize download counter
         self.dark_mode = False  # Track dark mode state
+        self.log_file = None  # Track current log file
+        self.log_enabled = True  # Enable logging by default
+        
+        # Don't set log_dir to default here - let load_settings handle it
+        self.log_dir = None
+        self.default_music_dir = self.get_windows_music_folder()
 
         self.initUI()
+        # Load settings before setting up logging
+        self.load_settings()
+        # Now connect the signals to save any FUTURE changes
+        self.connect_settings_signals()
+        # Apply dark mode if enabled
+        if self.dark_mode:
+            self.apply_dark_mode()
+        # Now setup logging AFTER settings are loaded
+        self.setup_logging()
+
+    def get_config_path(self):
+        """Get the path to the config file"""
+        if self.is_bundled:
+            # For bundled apps, use the executable directory
+            base_dir = os.path.dirname(sys.executable)
+        else:
+            # For development, use the script directory
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        return os.path.join(base_dir, "spotdl_gui_config.ini")
+
+    def load_settings(self):
+        """Load settings from config file"""
+        config_path = self.get_config_path()
+        config = configparser.ConfigParser()
+        
+        # Set default log directory first
+        default_log_dir = os.path.join(os.getcwd(), "spotdl_gui logs")
+        self.log_dir = default_log_dir
+        
+        if not os.path.exists(config_path):
+            self.append_output("No existing config file found. Using default settings.", "info")
+            return
+        
+        try:
+            config.read(config_path, encoding='utf-8')
+            
+            # General settings
+            if config.has_section('General'):
+                if config.has_option('General', 'dark_mode'):
+                    dark_mode = config.getboolean('General', 'dark_mode')
+                    self.dark_mode = dark_mode
+                    if hasattr(self, 'dark_mode_action'):
+                        self.dark_mode_action.setChecked(dark_mode)
+                
+                if config.has_option('General', 'logging_enabled'):
+                    self.log_enabled = config.getboolean('General', 'logging_enabled')
+                    if hasattr(self, 'logging_action'):
+                        self.logging_action.setChecked(self.log_enabled)
+            
+            # Directory settings - THIS IS THE CRITICAL FIX
+            if config.has_section('Directories'):
+                if config.has_option('Directories', 'download_dir'):
+                    download_dir = config.get('Directories', 'download_dir')
+                    if os.path.exists(download_dir):
+                        self.dir_input.setText(download_dir)
+                
+                if config.has_option('Directories', 'log_dir'):
+                    log_dir = config.get('Directories', 'log_dir')
+                    # Always use the config value if it exists, even if directory doesn't exist yet
+                    self.log_dir = log_dir
+            
+            # Audio settings
+            if config.has_section('Audio'):
+                if config.has_option('Audio', 'format'):
+                    format_text = config.get('Audio', 'format')
+                    format_index = self.format_combo.findText(format_text)
+                    if format_index >= 0:
+                        self.format_combo.setCurrentIndex(format_index)
+                
+                if config.has_option('Audio', 'bitrate'):
+                    bitrate_text = config.get('Audio', 'bitrate')
+                    bitrate_index = self.bitrate_combo.findText(bitrate_text)
+                    if bitrate_index >= 0:
+                        self.bitrate_combo.setCurrentIndex(bitrate_index)
+            
+            # Folder structure
+            if config.has_section('Structure'):
+                if config.has_option('Structure', 'folder_structure'):
+                    structure = config.get('Structure', 'folder_structure')
+                    if structure == "artist_album_song":
+                        self.artist_album_song.setChecked(True)
+                    elif structure == "artist_song":
+                        self.artist_song.setChecked(True)
+                    elif structure == "song_only":
+                        self.song_only.setChecked(True)
+            
+            # Window geometry
+            if config.has_section('Window'):
+                if config.has_option('Window', 'geometry'):
+                    try:
+                        geometry_data = json.loads(config.get('Window', 'geometry'))
+                        if len(geometry_data) == 4:
+                            self.setGeometry(*geometry_data)
+                    except:
+                        pass
+            
+            self.append_output("Settings loaded from config file.", "info")
+            
+        except Exception as e:
+            self.append_output(f"Error loading settings: {str(e)}", "error")
+
+    def save_settings(self):
+        """Save settings to config file"""
+        config = configparser.ConfigParser()
+        
+        # General settings
+        config['General'] = {
+            'dark_mode': str(self.dark_mode),
+            'logging_enabled': str(self.log_enabled)
+        }
+        
+        # Directory settings
+        config['Directories'] = {
+            'download_dir': self.dir_input.text(),
+            'log_dir': self.log_dir
+        }
+        
+        # Audio settings
+        config['Audio'] = {
+            'format': self.format_combo.currentText(),
+            'bitrate': self.bitrate_combo.currentText()
+        }
+        
+        # Folder structure
+        structure = "artist_album_song"
+        if self.artist_song.isChecked():
+            structure = "artist_song"
+        elif self.song_only.isChecked():
+            structure = "song_only"
+        
+        config['Structure'] = {
+            'folder_structure': structure
+        }
+        
+        # Window geometry
+        config['Window'] = {
+            'geometry': json.dumps([
+                self.geometry().x(),
+                self.geometry().y(),
+                self.geometry().width(),
+                self.geometry().height()
+            ])
+        }
+        
+        try:
+            config_path = self.get_config_path()
+            # Create directory if it doesn't exist
+            os.makedirs(os.path.dirname(config_path), exist_ok=True)
+            
+            with open(config_path, 'w', encoding='utf-8') as configfile:
+                config.write(configfile)
+            
+            self.append_output("Settings saved successfully.", "info")
+            
+        except Exception as e:
+            self.append_output(f"Error saving settings: {str(e)}", "error")
+
+    def closeEvent(self, event):
+        """Save settings when the application closes"""
+        self.save_settings()
+        event.accept()
+
+    def connect_settings_signals(self):
+        """Connect signals for settings that should auto-save"""
+        self.format_combo.currentTextChanged.connect(self.save_settings)
+        self.bitrate_combo.currentTextChanged.connect(self.save_settings)
+        self.artist_album_song.toggled.connect(self.save_settings)
+        self.artist_song.toggled.connect(self.save_settings)
+        self.song_only.toggled.connect(self.save_settings)
+
+    def setup_logging(self):
+        """Setup logging directory and create a new log file"""
+        try:
+            # Debug output to see which directory is being used
+            #self.append_output(f"Setting up logging in directory: {self.log_dir}", "info")
+            
+            # Create logs directory if it doesn't exist
+            if not os.path.exists(self.log_dir):
+                os.makedirs(self.log_dir)
+                self.append_output(f"Created log directory: {self.log_dir}", "info")
+            
+            # Create a new log file with timestamp
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+            log_filename = f"console-log {timestamp}.txt"
+            self.log_file = os.path.join(self.log_dir, log_filename)
+            
+            # Write initial log header
+            with open(self.log_file, 'w', encoding='utf-8') as f:
+                f.write(f"SpotDL GUI Log - {timestamp}\n")
+                f.write(f"Log directory: {self.log_dir}\n")
+                f.write("=" * 50 + "\n\n")
+            
+            self.append_output(f"Logging to: {self.log_file}", "info")
+            return True
+            
+        except Exception as e:
+            self.append_output(f"Error creating log file: {str(e)}", "error")
+            self.log_enabled = False
+            return False
+
+    def select_log_directory(self):
+        """Allow user to select where log files are stored"""
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            'Select Log Directory',
+            self.log_dir  # Start in current log directory
+        )
+        if directory:
+            self.log_dir = directory
+            self.append_output(f"Log directory set to: {self.log_dir}", "info")
+            
+            # Reinitialize logging with new directory
+            if self.log_enabled:
+                self.setup_logging()
+            
+            # Save settings after directory change
+            self.save_settings()
+
+    def open_log_directory(self):
+        """Open the log directory in file explorer"""
+        if not os.path.exists(self.log_dir):
+            QMessageBox.warning(self, 'Directory Not Found', 'The log directory does not exist.')
+            self.append_output(f"Error: Log directory not found: {self.log_dir}", "error")
+            return
+
+        try:
+            # Use os.startfile on Windows
+            if sys.platform == "win32":
+                os.startfile(self.log_dir)
+            # Use 'open' on macOS
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", self.log_dir])
+            # Use 'xdg-open' or 'gnome-open' on Linux
+            else:
+                try:
+                    subprocess.Popen(["xdg-open", self.log_dir])
+                except FileNotFoundError:
+                    subprocess.Popen(["gnome-open", self.log_dir])
+            
+            self.append_output(f"Opened log directory: {self.log_dir}", "info")
+
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Could not open log directory: {str(e)}')
+            self.append_output(f"Error: Could not open log directory: {str(e)}", "error")
+
+    def write_to_log(self, text):
+        """Write text to the current log file"""
+        if self.log_enabled and self.log_file:
+            try:
+                with open(self.log_file, 'a', encoding='utf-8') as f:
+                    f.write(text + "\n")
+            except Exception as e:
+                # If logging fails, disable it to prevent further errors
+                self.log_enabled = False
+                self.append_output(f"Error writing to log: {str(e)}", "error")
 
     def get_icon_path(self):
         """
@@ -49,10 +314,6 @@ class SpotDLGUI(QMainWindow):
         # Construct the path to the icon
         icon_path = os.path.join(base_path, 'icon.ico')
         
-        # Debug output (you can remove this later)
-        print(f"Looking for icon at: {icon_path}")
-        print(f"Icon exists: {os.path.exists(icon_path)}")
-        
         # Check if the icon exists at the calculated path
         if os.path.exists(icon_path):
             return icon_path
@@ -73,12 +334,9 @@ class SpotDLGUI(QMainWindow):
         try:
             icon_path = self.get_icon_path()
             if icon_path:
-                print(f"Loading icon from: {icon_path}")  # Debug
                 self.setWindowIcon(QIcon(icon_path))
-            else:
-                print("Icon not found at any location")  # Debug
         except Exception as e:
-            print(f"Could not load icon: {e}")  # Debug output
+            print(f"Could not load icon: {e}")
 
         # Create menu bar
         self.create_menu()
@@ -108,7 +366,6 @@ class SpotDLGUI(QMainWindow):
         self.dir_input = QLineEdit()
 
         # Set default to Windows Music folder
-        self.default_music_dir = self.get_windows_music_folder()
         self.dir_input.setText(self.default_music_dir)
         self.dir_input.setPlaceholderText('Select download directory')
 
@@ -128,7 +385,7 @@ class SpotDLGUI(QMainWindow):
         dir_control_layout.addWidget(self.dir_input)
         dir_control_layout.addWidget(self.dir_button)
         dir_control_layout.addWidget(self.reset_dir_button)
-        dir_control_layout.addWidget(self.open_dir_button) # Add the new button
+        dir_control_layout.addWidget(self.open_dir_button)
         dir_layout.addLayout(dir_control_layout)
         dir_group.setLayout(dir_layout)
         layout.addWidget(dir_group)
@@ -146,7 +403,7 @@ class SpotDLGUI(QMainWindow):
         format_layout = QVBoxLayout(format_widget)
         format_label = QLabel('Format:')
         self.format_combo = QComboBox()
-        self.format_combo.addItems(['MP3', 'WAV', 'FLAC'])
+        self.format_combo.addItems(['mp3', 'wav', 'flac'])
         self.format_combo.setCurrentIndex(0)  # Default to mp3
         self.format_combo.setToolTip('Select the audio format for downloaded files')
         format_layout.addWidget(format_label)
@@ -157,8 +414,8 @@ class SpotDLGUI(QMainWindow):
         bitrate_layout = QVBoxLayout(bitrate_widget)
         bitrate_label = QLabel('Bitrate:')
         self.bitrate_combo = QComboBox()
-        self.bitrate_combo.addItems([' 128k', ' 192k', ' 256k', ' 320k', ' BEST'])
-        self.bitrate_combo.setCurrentIndex(4)  # Default to BEST
+        self.bitrate_combo.addItems(['auto', 'disable', '8k', '16k', '24k', '32k', '40k', '48k', '64k', '80k', '96k', '112k', '128k', '160k', '192k', '224k', '256k', '320k'])
+        self.bitrate_combo.setCurrentIndex(0)
         self.bitrate_combo.setToolTip('Select the audio bitrate for downloaded files')
         bitrate_layout.addWidget(bitrate_label)
         bitrate_layout.addWidget(self.bitrate_combo)
@@ -253,46 +510,78 @@ class SpotDLGUI(QMainWindow):
         if self.is_bundled:
             self.append_output("Running in portable mode...", "info")
 
-        # Show the default directory info
-        self.append_output(f"Default download directory: {self.default_music_dir}", "info")
-
     def create_menu(self):
         """Create the menu bar with dark mode and contact options"""
         menubar = self.menuBar()
 
         # View menu
         view_menu = menubar.addMenu('View')
-
+        
         # Dark mode toggle action
         self.dark_mode_action = QAction('Dark Mode', self, checkable=True)
+        self.dark_mode_action.setChecked(self.dark_mode)
         self.dark_mode_action.triggered.connect(self.toggle_dark_mode)
         view_menu.addAction(self.dark_mode_action)
 
+        # Logging toggle action
+        self.logging_action = QAction('Enable Logging', self, checkable=True)
+        self.logging_action.setChecked(self.log_enabled)
+        self.logging_action.triggered.connect(self.toggle_logging)
+        view_menu.addAction(self.logging_action)
+
+        # Log directory selection action
+        self.log_dir_action = QAction('Select Log Directory', self)
+        self.log_dir_action.triggered.connect(self.select_log_directory)
+        view_menu.addAction(self.log_dir_action)
+
+        # Open log directory action
+        self.open_log_dir_action = QAction('Open Log Directory', self)
+        self.open_log_dir_action.triggered.connect(self.open_log_directory)
+        view_menu.addAction(self.open_log_dir_action)
+
         # Help menu
         help_menu = menubar.addMenu('Help')
-
-        # Contact action
-        contact_action = QAction('Contact', self)
-        contact_action.triggered.connect(self.open_contact_link)
-        help_menu.addAction(contact_action)
+        
+        # Create a new menu for the 'Contact' option
+        contact_menu = help_menu.addMenu('Contact')
 
         # About action
         about_action = QAction('About', self)
         about_action.triggered.connect(self.show_about)
         help_menu.addAction(about_action)
 
-        #GitHub menu
-        github_menu = menubar.addMenu('GitHub')
-      
-        # GitHub action
-        github_action = QAction('SpotDL', self)
-        github_action.triggered.connect(self.open_github_link1)
-        github_menu.addAction(github_action)
+        # GitHub menu
+        github_menu = QMenu('GitHub', self)
 
-        # GitHub action
-        github_action = QAction('SpotDL_GUI', self)
-        github_action.triggered.connect(self.open_github_link2)
-        github_menu.addAction(github_action)
+        # GitHub action for spotdl
+        github_action_spotdl = QAction('SpotDL', self)
+        github_action_spotdl.triggered.connect(self.open_github_link1)
+        github_menu.addAction(github_action_spotdl)
+
+        # GitHub action for spotdl_gui
+        github_action_gui = QAction('SpotDL_GUI', self)
+        github_action_gui.triggered.connect(self.open_github_link2)
+        github_menu.addAction(github_action_gui)
+        
+        # Add the GitHub menu as a submenu of the Contact menu
+        contact_menu.addMenu(github_menu)
+
+        # Create a QAction for the original 'Contact' link
+        contact_link_action = QAction('Linktree', self)
+        contact_link_action.triggered.connect(self.open_contact_link)
+        contact_menu.addAction(contact_link_action)
+
+
+    def toggle_logging(self, checked):
+        """Toggle logging on/off"""
+        self.log_enabled = checked
+        if checked:
+            self.setup_logging()
+            self.append_output("Logging enabled", "info")
+        else:
+            self.append_output("Logging disabled", "info")
+        # Save settings immediately when toggled
+        self.save_settings()
 
     def open_contact_link(self):
         """Open the Linktree contact page in the default browser"""
@@ -339,6 +628,8 @@ class SpotDLGUI(QMainWindow):
             self.apply_dark_mode()
         else:
             self.apply_light_mode()
+        # Save settings immediately when toggled
+        self.save_settings()
 
     def apply_dark_mode(self):
         """Apply dark mode styling to the application"""
@@ -361,8 +652,12 @@ class SpotDLGUI(QMainWindow):
         # Apply the dark palette to the application
         QApplication.setPalette(dark_palette)
 
-        # Apply specific styling to widgets but exclude the menu bar
-        self.centralWidget().setStyleSheet("""
+        # Apply specific styling to widgets
+        self.setStyleSheet("""
+            QMainWindow, QWidget {
+                background-color: #353535;
+                color: white;
+            }
             QGroupBox {
                 font-weight: bold;
                 border: 2px solid #555;
@@ -371,27 +666,23 @@ class SpotDLGUI(QMainWindow):
                 padding-top: 10px;
                 background-color: #353535;
             }
-
             QGroupBox::title {
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 5px 0 5px;
                 color: #FFF;
             }
-
             QTextEdit {
                 background-color: #252525;
                 color: #FFF;
                 border: 1px solid #555;
             }
-
             QLineEdit {
                 background-color: #252525;
                 color: #FFF;
                 border: 1px solid #555;
                 padding: 5px;
             }
-
             QPushButton {
                 background-color: #555;
                 color: white;
@@ -399,45 +690,30 @@ class SpotDLGUI(QMainWindow):
                 padding: 5px 10px;
                 border-radius: 3px;
             }
-
             QPushButton:hover {
                 background-color: #666;
             }
-
             QPushButton:pressed {
                 background-color: #777;
             }
-
             QPushButton:disabled {
                 background-color: #333;
                 color: #888;
             }
-
-            QRadioButton {
+            QRadioButton, QCheckBox, QLabel {
                 color: #FFF;
             }
-
-            QCheckBox {
-                color: #FFF;
-            }
-
-            QLabel {
-                color: #FFF;
-            }
-
             QComboBox {
                 background-color: #252525;
                 color: #FFF;
                 border: 1px solid #555;
                 padding: 5px;
             }
-
             QComboBox QAbstractItemView {
                 background-color: #252525;
                 color: #FFF;
                 selection-background-color: #555;
             }
-
             QProgressBar {
                 border: 1px solid #555;
                 border-radius: 3px;
@@ -445,54 +721,43 @@ class SpotDLGUI(QMainWindow):
                 background-color: #353535;
                 color: white;
             }
-
             QProgressBar::chunk {
                 background-color: #4CAF50;
                 width: 10px;
             }
-        """)
-
-        # Apply special button styles
-        self.download_button.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }")
-        self.cancel_button.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; }")
-
-        # Style the menu bar separately to ensure it remains readable
-        self.menuBar().setStyleSheet("""
             QMenuBar {
                 background-color: #353535;
                 color: white;
             }
-
             QMenuBar::item {
                 background-color: transparent;
                 color: white;
                 padding: 5px 10px;
             }
-
             QMenuBar::item:selected {
                 background-color: #555;
             }
-
             QMenu {
                 background-color: #353535;
                 color: white;
                 border: 1px solid #555;
             }
-
             QMenu::item:selected {
                 background-color: #555;
             }
         """)
 
-        self.append_output("Dark mode enabled", "info")
+        # Reapply special button styles
+        self.download_button.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }")
+        self.cancel_button.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; }")
 
     def apply_light_mode(self):
         """Apply light mode styling to the application"""
         # Reset to default palette
         QApplication.setPalette(QApplication.style().standardPalette())
-
-        # Reset stylesheet to default for central widget
-        self.centralWidget().setStyleSheet("""
+        
+        # Reset stylesheet
+        self.setStyleSheet("""
             QPushButton {
                 background-color: #f0f0f0;
                 color: black;
@@ -500,34 +765,25 @@ class SpotDLGUI(QMainWindow):
                 padding: 5px 10px;
                 border-radius: 3px;
             }
-
             QPushButton:hover {
                 background-color: #e0e0e0;
             }
-
             QPushButton:pressed {
                 background-color: #d0d0d0;
             }
-
             QPushButton:disabled {
                 background-color: #f8f8f8;
                 color: #aaa;
             }
-
             QProgressBar::chunk {
                 background-color: #4CAF50;
                 width: 10px;
             }
         """)
 
-        # Reset menu bar styling
-        self.menuBar().setStyleSheet("")
-
         # Reapply special button styles
         self.download_button.setStyleSheet("QPushButton { background-color: #4CAF50; color: white; font-weight: bold; }")
         self.cancel_button.setStyleSheet("QPushButton { background-color: #f44336; color: white; font-weight: bold; }")
-
-        self.append_output("Light mode enabled", "info")
 
     def open_download_directory(self):
         """Open the selected download directory using the system's file explorer."""
@@ -581,6 +837,8 @@ class SpotDLGUI(QMainWindow):
         """Reset the directory to the default Windows Music folder"""
         self.dir_input.setText(self.default_music_dir)
         self.append_output(f"Reset to default directory: {self.default_music_dir}", "info")
+        # Save settings after reset
+        self.save_settings()
 
     def reset_counter(self):
         """Reset the download counter to zero"""
@@ -603,6 +861,8 @@ class SpotDLGUI(QMainWindow):
         if directory:
             self.dir_input.setText(directory)
             self.append_output(f"Selected directory: {directory}", "info")
+            # Save settings after directory change
+            self.save_settings()
 
     def get_output_template(self):
         if self.artist_album_song.isChecked():
@@ -774,6 +1034,9 @@ class SpotDLGUI(QMainWindow):
         cursor.setCharFormat(format)
         cursor.insertText(text.strip() + "\n")
 
+        # Write to log file (without color formatting)
+        self.write_to_log(text.strip())
+
         # Auto-scroll to bottom
         self.console.verticalScrollBar().setValue(
             self.console.verticalScrollBar().maximum()
@@ -796,7 +1059,7 @@ class SpotDLGUI(QMainWindow):
         self.dir_input.setEnabled(enabled)
         self.dir_button.setEnabled(enabled)
         self.reset_dir_button.setEnabled(enabled)
-        self.open_dir_button.setEnabled(enabled)  # Enable/disable the new button
+        self.open_dir_button.setEnabled(True) 
         self.format_combo.setEnabled(enabled)
         self.bitrate_combo.setEnabled(enabled)
         self.artist_album_song.setEnabled(enabled)
