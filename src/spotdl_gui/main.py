@@ -316,7 +316,7 @@ class SpotDLGUI(QMainWindow):
         return None
 
     def initUI(self):
-        self.setWindowTitle('SpotDL GUI - 0.2.0')
+        self.setWindowTitle('SpotDL GUI - 0.2.1')
         self.setGeometry(100, 100, 800, 700)  # Increased height for counter
 
         # Set application icon if available
@@ -1129,5 +1129,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
