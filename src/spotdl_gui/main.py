@@ -60,7 +60,7 @@ class SpotDLGUI(QMainWindow):
         config = configparser.ConfigParser()
         
         # Set default log directory first
-        default_log_dir = os.path.join(os.getcwd(), "spotdl_gui logs")
+        default_log_dir = os.path.join(os.getcwd(), "spotdl_gui-logs")
         self.log_dir = default_log_dir
         
         if not os.path.exists(config_path):
@@ -222,7 +222,7 @@ class SpotDLGUI(QMainWindow):
             
             # Write initial log header
             with open(self.log_file, 'w', encoding='utf-8') as f:
-                f.write(f"SpotDL GUI Log - {timestamp}\n")
+                f.write(f"console.log - {timestamp}\n")
                 f.write(f"Log directory: {self.log_dir}\n")
                 f.write("=" * 50 + "\n\n")
             
@@ -1129,3 +1129,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
