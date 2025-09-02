@@ -222,7 +222,7 @@ class SpotDLGUI(QMainWindow):
             
             # Write initial log header
             with open(self.log_file, 'w', encoding='utf-8') as f:
-                f.write(f"console.log - {timestamp}\n")
+                f.write(f"console-log - {timestamp}\n")
                 f.write(f"Log directory: {self.log_dir}\n")
                 f.write("=" * 50 + "\n\n")
             
@@ -1129,4 +1129,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
