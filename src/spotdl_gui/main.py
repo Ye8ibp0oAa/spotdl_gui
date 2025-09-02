@@ -279,17 +279,6 @@ class SpotDLGUI(QMainWindow):
             QMessageBox.critical(self, 'Error', f'Could not open log directory: {str(e)}')
             self.append_output(f"Error: Could not open log directory: {str(e)}", "error")
 
-    def write_to_log(self, text):
-        """Write text to the current log file"""
-        if self.log_enabled and self.log_file:
-            try:
-                with open(self.log_file, 'a', encoding='utf-8') as f:
-                    f.write(text + "\n")
-            except Exception as e:
-                # If logging fails, disable it to prevent further errors
-                self.log_enabled = False
-                self.append_output(f"Error writing to log: {str(e)}", "error")
-
     def get_icon_path(self):
         """
         Get the correct path to the icon.ico file, whether running from source,
@@ -327,7 +316,7 @@ class SpotDLGUI(QMainWindow):
         return None
 
     def initUI(self):
-        self.setWindowTitle('SpotDL GUI')
+        self.setWindowTitle('SpotDL GUI - 0.2.0')
         self.setGeometry(100, 100, 800, 700)  # Increased height for counter
 
         # Set application icon if available
@@ -514,7 +503,7 @@ class SpotDLGUI(QMainWindow):
         """Create the menu bar with settings and help options"""
         menubar = self.menuBar()
 
-        # Settings menu (renamed from 'View' for clarity)
+        # Settings menu
         settings_menu = menubar.addMenu('Settings')
         
         # Dark mode toggle action
@@ -528,6 +517,11 @@ class SpotDLGUI(QMainWindow):
         self.logging_action.setChecked(self.log_enabled)
         self.logging_action.triggered.connect(self.toggle_logging)
         settings_menu.addAction(self.logging_action)
+        
+        # Open config location action
+        open_config_action = QAction('Open Config Folder', self)
+        open_config_action.triggered.connect(self.open_config_location)
+        settings_menu.addAction(open_config_action)
 
         # Log directory selection action
         self.log_dir_action = QAction('Select Log Directory', self)
@@ -570,6 +564,36 @@ class SpotDLGUI(QMainWindow):
         contact_link_action = QAction('Linktree', self)
         contact_link_action.triggered.connect(self.open_contact_link)
         contact_menu.addAction(contact_link_action)
+
+    def open_config_location(self):
+        """Open the config file location in the system's file explorer"""
+        config_path = self.get_config_path()
+        config_dir = os.path.dirname(config_path)
+
+        if not os.path.exists(config_dir):
+            QMessageBox.warning(self, 'Directory Not Found', 'The config directory does not exist.')
+            self.append_output(f"Error: Config directory not found: {config_dir}", "error")
+            return
+
+        try:
+            # Use os.startfile on Windows
+            if sys.platform == "win32":
+                os.startfile(config_dir)
+            # Use 'open' on macOS
+            elif sys.platform == "darwin":
+                subprocess.Popen(["open", config_dir])
+            # Use 'xdg-open' or 'gnome-open' on Linux
+            else:
+                try:
+                    subprocess.Popen(["xdg-open", config_dir])
+                except FileNotFoundError:
+                    subprocess.Popen(["gnome-open", config_dir])
+            
+            self.append_output(f"Opened config directory: {config_dir}", "info")
+
+        except Exception as e:
+            QMessageBox.critical(self, 'Error', f'Could not open config directory: {str(e)}')
+            self.append_output(f"Error: Could not open config directory: {str(e)}", "error")
 
     def toggle_logging(self, checked):
         """Toggle logging on/off"""
@@ -1067,6 +1091,22 @@ class SpotDLGUI(QMainWindow):
         self.download_button.setEnabled(enabled)
         self.cancel_button.setEnabled(not enabled)
         self.reset_counter_btn.setEnabled(enabled)
+        self.dark_mode_action.setEnabled(enabled)
+        self.logging_action.setEnabled(enabled)
+        self.log_dir_action.setEnabled(enabled)
+        self.open_log_dir_action.setEnabled(enabled)
+
+    def write_to_log(self, message):
+        """Write a message to the current log file if logging is enabled"""
+        if self.log_enabled and self.log_file:
+            try:
+                with open(self.log_file, 'a', encoding='utf-8') as f:
+                    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                    f.write(f"[{timestamp}] {message}\n")
+            except Exception as e:
+                # Fallback if logging fails
+                self.append_output(f"Error writing to log file: {str(e)}", "error")
+                self.log_enabled = False
 
 def main():
     """Main function to run the application."""
