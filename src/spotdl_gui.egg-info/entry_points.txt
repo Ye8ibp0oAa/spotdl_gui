@@ -1,2 +1,0 @@
-[gui_scripts]
-spotdl_gui = spotdl_gui.main:main
