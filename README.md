@@ -1,15 +1,17 @@
+I am aware that  this is 0.2.1 and the program title says "SpotDL GUI - 0.2.0" It'll be fixed next  update
+
 # SpotDL GUI
 A user-friendly graphical interface for the [`spotdl`](https://github.com/spotDL/spotify-downloader) command-line tool, making it easy to download music from Spotify without using terminal commands.
 
 > [!IMPORTANT]
-> NO AFFILIATION WITH SPOTDL. THIS IS AN INDEPENDENT PROJECT 
+> NO AFFILIATION WITH SPOTDL. THIS IS AN INDEPENDENT PROJECT
 
 ## Overview
 A user-friendly graphical interface for downloading Spotify songs, albums, and playlists using spotdl.
 
 ![License](https://img.shields.io/badge/License-GPLv3-blue?style=for-the-badge&labelColor=black&color=blue)
 ![SpotDL GUI](https://img.shields.io/badge/Python-3.10_|_3.11_|_3.12_|_3.13-blue?style=for-the-badge&labelColor=black&color=blue)
-![Version](https://img.shields.io/badge/Version-0.2.0-red?style=for-the-badge&labelColor=black)
+![Version](https://img.shields.io/badge/Version-0.2.1-red?style=for-the-badge&labelColor=black)
 
 ## Features
 - 🎵 Download Spotify songs, albums, and playlists
@@ -46,4 +48,5 @@ spotdl_gui
 
 # License
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0). See the LICENSE file for details.
+
 
